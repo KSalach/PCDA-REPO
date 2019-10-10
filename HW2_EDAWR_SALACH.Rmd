@@ -219,7 +219,18 @@ quantile(county_df$Income, c(.95, .99))
 print("95th and 99th percentile income per capita:")
 quantile(county_df$IncomePerCap, c(.95, .99))
 
-print('just making a random change.')
+# interquartile range using a vector.  This is cool.
+print("25th and 75th percentile median income:")
+quantile(county_df$Income, c(.25, .75))
+print("25th and 75th percentile income per capita:")
+quantile(county_df$IncomePerCap, c(.25, .75))
+
+# Coefficient of variation.  
+print("Coeff of variation for Income:")
+mean(county_df$Income) / sd(county_df$Income)
+print("Coeff of variation for income per capita:")
+mean(county_df$IncomePerCap) / sd(county_df$IncomePerCap)
+
 
 ```
 ```{r histo_dens}
@@ -229,7 +240,7 @@ print('just making a random change.')
 
 Write a short paragraph describing the distribution of of these two variables.
 
-> Your interpretation of the summary stats and plots above...
+> Both median income and Income per Capita are a little bit right skewed, but otherwise look a bit normal-ish.  There are outliers for high income counties that skew the data to the right.  Lop off the outliers and you could convince me it was a bell curve.
 >
 
 Repeat the histogram for Income but make the following style changes to the plot.
