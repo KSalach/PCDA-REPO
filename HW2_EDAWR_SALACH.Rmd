@@ -218,6 +218,9 @@ print("95th and 99th percentile median income:")
 quantile(county_df$Income, c(.95, .99))
 print("95th and 99th percentile income per capita:")
 quantile(county_df$IncomePerCap, c(.95, .99))
+
+print('just making a random change.')
+
 ```
 ```{r histo_dens}
 
