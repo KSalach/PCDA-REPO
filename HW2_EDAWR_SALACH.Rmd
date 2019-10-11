@@ -251,6 +251,15 @@ Repeat the histogram for Income but make the following style changes to the plot
 * Change the colors of the bars to something other than the default
 
 ```{r histo_stylechanges}
+# median income for US.  
+ggplot(data = county_df) + 
+  geom_histogram(aes(x = Income), fill = 'blue', color = 'white', binwidth = 2500) + 
+  ylab('Number of Counties') +
+  ggtitle("Distibution of Median Income by County") + 
+  # lose the scientific notation; 
+  scale_x_continuous(breaks = seq(0, 200000, 20000), labels = comma, 'Median Income')
+  
+ 
 
 ```
 
