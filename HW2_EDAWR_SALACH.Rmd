@@ -266,18 +266,18 @@ ggplot(data = county_df) +
 Now create a set of histograms for Income in which you facet by Division.
 
 ```{r histos_division}
-# ggplot(county_df) + 
-#   geom_histogram(aes(x=Income)) +
-#   ???
+ggplot(county_df) +
+  geom_histogram(aes(x=Income)) +
+  facet_wrap(~ Division)
 ```
 
 Since the number of counties varies by Division, create a new version of the plot above but modify so that the y-axis shows frequency percentages instead of
 counts. Hint: `..density..`
 
 ```{r histos_division_density}
-# ggplot(county_df) + 
-#   geom_histogram(aes(???)) +
-#   ???
+ggplot(county_df) +
+  geom_density(aes(x=Income)) +
+  facet_wrap(~ Division)
 ```
 
 
@@ -286,16 +286,24 @@ see that for both of these plot types, ggplot wants an `x` aesthetic to act as a
 
 ```{r box_violin}
 # Boxplots and violin plots
+ggplot(county_df) + 
+  geom_boxplot(aes(Region, Income))
+
+ggplot(county_df) + 
+  geom_violin(aes(Region, Income))
 
 ```
 
-> Your interpretation ...
+> It's easy to see from skewness in the data from these plots.  The box plot shows plenty of outliers in the form of the dots, or points, in the high income range.  The violin plots help us see the same pattern in the data, with the added benefit that we can see where most of the income is concentrated.  In the Midwest, the violin shap is "fat" which shows us that many counties have a median income level around $50,000.  The West region, has a slimmer shape.  There may be more variability in the median income for the west region.  We can confirm with a standard deviation by region.
 >
 
 Repeat the histogram of Income but only for counties with less than 500,000 people. Do NOT use
 dplyr to do the filtering - instead, use boolean indexing (see intro to dataframes Rmd file).
 
 ```{r histo_lt1.5m1}
+ggplot(county_df[county_df$TotalPop < 500000, ]) +
+  geom_histogram(aes(Income)) 
+  
 
 
 
