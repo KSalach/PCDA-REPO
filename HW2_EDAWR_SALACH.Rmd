@@ -313,8 +313,14 @@ ggplot(county_df[county_df$TotalPop < 500000, ]) +
 Income. 
 
 ```{r hackerxtra_kdoverlay}
+ggplot(county_df[county_df$TotalPop < 500000, ]) +
+  geom_histogram(aes(Income)) + 
+  geom_density(aes(Income)) + 
+  # hmmmmm....
+    scale_y_continuous(sec.axis = sec_axis(~ . / 10000))
 
-```
+
+  ```
 
 ### Problem 3 - How do Michigan's peninsulas compare?
 
@@ -324,12 +330,20 @@ your graph has a title and good axis labels.
 ```{r vp_inc_by_peninsula}
 
 
+ggplot(county_mi_df) + 
+  geom_violin(aes(x = peninsula, y = Income)) + 
+  ggtitle("Median Michigan Income by County and Peninsula") + 
+  # Center this bad boy
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_y_continuous(labels = comma, 'Median Income by County') + 
+  scale_x_discrete('Michigan Peninsula')
+  
 ```
 
 Do the peninsulas 
 differ with respect to distribution of median income over the counties?
 
-> Your discussion...
+> Absolutely.  The Upper Peninsula does not have the right skewness in distribution that the Lower Peninsula seems to have.  No very wealthy counties north of the bridge.
 
 Create several boxplots and/or violin plots showing how the peninsulas compare with respect to
 some of the other variables. Summarize your findings in a few short paragraphs.
