@@ -1,8 +1,10 @@
 ---
-title: "HW2-EDA with R - Part1: Plotting"
-author: "misken"
-date: "September 29, 2019"
-output: html_notebook
+title: 'HW2-EDA with R - Part1: Plotting'
+author: "Keith Salach"
+date: "October 13, 2019"
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -182,66 +184,44 @@ ggplot(data = county_df) +
   
 
 # check minimum and max county income since my histo looked off.
-print("Lowest county median income:")
 min(county_df$Income)
-print("Highest county median income:")
 max(county_df$Income)
 
-print("Lowest county income per cap:")
+# misc summary stats
 min(county_df$IncomePerCap)
-print("Highest county income per cap:")
 max(county_df$IncomePerCap)
 
-print('Range of income per cap:')
 max(county_df$IncomePerCap) - min(county_df$IncomePerCap)
-print('Range of median income:')
 max(county_df$Income) - min(county_df$Income)
 
-print("Mean county income per cap:")
 mean(county_df$IncomePerCap)
-# hmmmmm.....strange way to look at this
-print("Mean county median income:")
 mean(county_df$Income)
 
-print("Median county median income:")
 median(county_df$Income)
-print("Median county income per capita:")
 median(county_df$IncomePerCap)
 
-print("Standard Dev median income:")
 sd(county_df$Income)
-print("Standard dev county median income:")
 sd(county_df$Income)
 
 # percentiles using a vector.  This is cool.
-print("95th and 99th percentile median income:")
 quantile(county_df$Income, c(.95, .99))
-print("95th and 99th percentile income per capita:")
 quantile(county_df$IncomePerCap, c(.95, .99))
 
 # interquartile range using a vector.  This is cool.
-print("25th and 75th percentile median income:")
 quantile(county_df$Income, c(.25, .75))
-print("25th and 75th percentile income per capita:")
 quantile(county_df$IncomePerCap, c(.25, .75))
 
 # Coefficient of variation.  
-print("Coeff of variation for Income:")
 mean(county_df$Income) / sd(county_df$Income)
-print("Coeff of variation for income per capita:")
 mean(county_df$IncomePerCap) / sd(county_df$IncomePerCap)
 
 
 ```
-```{r histo_dens}
-
-```
-
 
 Write a short paragraph describing the distribution of of these two variables.
 
 > Both median income and Income per Capita are a little bit right skewed, but otherwise look a bit normal-ish.  There are outliers for high income counties that skew the data to the right.  Lop off the outliers and you could convince me it was a bell curve.
->
+
 
 Repeat the histogram for Income but make the following style changes to the plot.
 
@@ -302,7 +282,8 @@ dplyr to do the filtering - instead, use boolean indexing (see intro to datafram
 
 ```{r histo_lt1.5m1}
 ggplot(county_df[county_df$TotalPop < 500000, ]) +
-  geom_histogram(aes(Income)) 
+  geom_histogram(aes(Income)) +
+  scale_x_continuous(labels = comma)
   
 
 
@@ -316,11 +297,9 @@ Income.
 ggplot(county_df[county_df$TotalPop < 500000, ]) +
   geom_histogram(aes(Income)) + 
   geom_density(aes(Income)) + 
-  # hmmmmm....
+  # hmmmm....no luck with this thing
     scale_y_continuous(sec.axis = sec_axis(~ . / 10000))
-
-
-  ```
+```
 
 ### Problem 3 - How do Michigan's peninsulas compare?
 
@@ -328,8 +307,6 @@ Create violin plots showing Income by peninsula. Make sure
 your graph has a title and good axis labels.
 
 ```{r vp_inc_by_peninsula}
-
-
 ggplot(county_mi_df) + 
   geom_violin(aes(x = peninsula, y = Income)) + 
   ggtitle("Median Michigan Income by County and Peninsula") + 
@@ -392,7 +369,7 @@ ggplot(county_df) +
 **Hacker Extra** Modify the above bar plot to be horizontal and have bars sorted from longest to shortest. In addition, map the bar color to the Region variable.
 
 ```{r bar_counties_by_state_hackerxtra, fig.height=6}
-
+# I know I'm missing something obvious; can't get the reorder function to work
 ggplot(county_df) + 
   geom_bar(aes(State, fill = Region)) + 
   coord_flip() +
@@ -468,7 +445,7 @@ ggplot(county_df) +
     scale_x_continuous(labels = comma) + 
     scale_y_continuous(labels = comma)
 
-# find the correlation between these two variables
+# find the correlation between these two variables; just for grins
 cor.test(county_df$TotalPop, county_df$IncomePerCap, method = "pearson", conf.level = 0.95)
 cor.test(log(county_df$TotalPop), county_df$IncomePerCap, method = "pearson", conf.level = 0.95)
 
