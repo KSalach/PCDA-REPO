@@ -349,11 +349,27 @@ Create several boxplots and/or violin plots showing how the peninsulas compare w
 some of the other variables. Summarize your findings in a few short paragraphs.
 
 ```{r boxplots_upvlp}
-
+ggplot(county_mi_df) +
+  geom_boxplot(aes(x = peninsula, y = Unemployment)) + 
+  ggtitle("County Unemployment Rates by Peninsula") + 
+  theme(plot.title = element_text(hjust = 0.5)) 
+  
+ggplot(county_mi_df) + 
+  geom_violin(aes(x = peninsula, y = Drive)) + 
+  ggtitle("Pecentage of Drivers by County") + 
+  theme(plot.title = element_text(hjust = 0.5))
+ 
+ggplot(county_mi_df) + 
+  geom_boxplot(aes(peninsula, Poverty)) + 
+  ggtitle("Percentage of White or Caucausion by County") + 
+  # Just experimenting....
+  theme(plot.title = element_text(hjust = 0.5, vjust = -80.5))
 
 ```
 
-> Your discussion ...
+> The mean unemployment rates between UP and LP are fairly similar; however, the distribution of these rates skews to the right for the Upper Peninsula.  Looks like there may be some conties struggling up there.
+
+> There appears to be fewer drivers up north.  I wonder why that is?  I thought there may be more poverty up there, but that does not appear to be the case based on the third box plot.
 
 
 ### Problem 4 - Basic bar chart
@@ -364,6 +380,12 @@ x-axis labels so that they don't obscure each other.
 
 ```{r bar_counties_by_state}
 
+ggplot(county_df) + 
+  # Audi Red
+  geom_bar(aes(State), fill = rgb(red=187, green=10, blue=48, maxColorValue = 255)) + 
+  theme(axis.text.x = element_text(angle = 90)) + 
+  scale_y_continuous('Number of Counties') + 
+  ggtitle('Number of Counties by State')
 
 ```
 
@@ -371,6 +393,11 @@ x-axis labels so that they don't obscure each other.
 
 ```{r bar_counties_by_state_hackerxtra, fig.height=6}
 
+ggplot(county_df) + 
+  geom_bar(aes(State, fill = Region)) + 
+  coord_flip() +
+  scale_y_continuous('Number of Counties') + 
+  ggtitle('Number of Counties by State')
 
 ```
 
@@ -380,6 +407,9 @@ Create a scatter plot using the Michigan only data frame comparing
 IncomePerCap and MeanCommute.
 
 ```{r xy_inc_commute}
+ggplot(county_mi_df) + 
+  geom_point(aes(IncomePerCap, MeanCommute))
+
 
 ```
 
@@ -388,11 +418,12 @@ is mapped to peninsula and the size is mapped to total population. In addition,
 create a similar plot comparing Income and Professional.
 
 ```{r xy_inc_commute_peninsula}
-
+ggplot(county_mi_df) + 
+  geom_point(aes(IncomePerCap, MeanCommute, color = peninsula, size = TotalPop))
 ```
 
-> Your thoughts on the relationship between these variables?
->
+> Looks like they are moderately positively correlated.  People seem to be willing to drive further to work if there is money as a carrot.  Or....it might be that counties are more wealthy BECAUSE people are willing to drive to work.  Correlation <> Causality.  The wealthier counties are all in the Lower Peninsula.
+
 
 Now, create a few more scatter plots using variables of your choosing in which
 you facet by peninsula as well. How do the relationships compare across the
@@ -400,15 +431,26 @@ peninsulas?
 
 
 ```{r xy_faceted_peninsula1}
+ggplot(county_mi_df) + 
+  geom_point(aes(IncomePerCap, Professional, size = TotalPop)) + 
+  facet_wrap(~ peninsula)
 
+ggplot(county_mi_df) + 
+  geom_point(aes(Income, Unemployment, size = Men)) + 
+  facet_wrap(~ peninsula)
 ```
+
+> In both cases, the lower peninsula data has a much stronger correlation between variables than the upper peninsula.  Possibly the lower population in the UP is resulting in this?  Or maybe just fewer counties creates fewer opportunities to witness the relationship in action.
 
 Now use the full US data frame, county_df.
 
 Create a scatter plot of TotalPop by IncomePerCap.
 
 ```{r xy_pop_inc}
-
+ggplot(county_df) +
+  geom_point(aes(TotalPop, IncomePerCap)) + 
+    scale_x_continuous(labels = comma) + 
+    scale_y_continuous(labels = comma)
 ```
 
 
@@ -421,9 +463,19 @@ transform of data when plotting.
 
 ```{r log10}
 
+ggplot(county_df) +
+  geom_point(aes(log(TotalPop), IncomePerCap)) + 
+    scale_x_continuous(labels = comma) + 
+    scale_y_continuous(labels = comma)
+
+# find the correlation between these two variables
+cor.test(county_df$TotalPop, county_df$IncomePerCap, method = "pearson", conf.level = 0.95)
+cor.test(log(county_df$TotalPop), county_df$IncomePerCap, method = "pearson", conf.level = 0.95)
+
+
 ```
 
-> Discussion ...
+> Taking the logarithm of Total Population here allows us to view the data based on the percent change in the data.  So many of the counties had similar populations that it makes a visualization difficult.  This allows us to see that there is in fact somewhat of a positive correlation between Income per Capita and Total Population.  Pearson's R shows us, however, that the correlation isn't that strong, at .293 for log(TotalPop) and Income per Capita.
 
 ## Deliverables
 
