@@ -1,0 +1,601 @@
+---
+title: "HW3 - Data wrangling and simple modeling with R"
+author: "misken"
+date: "October 15, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Step 1 - Familiarize yourself with the data and the assignment
+
+In this assignment you'll do some exploratory data analysis
+with R on a dataset about airline flights into and out of of Detroit Metropolitan
+Airport during January of 2017. See the README.md file (it's just a plain text file with markdown in it) for details about the data file. 
+
+You'll be doing your work right in this R Markdown document to
+do some data wrangling, analysis and model building as well as to document the
+steps you did (and answer some questions I'll throw at you).
+
+You'll notice a few "Hacker Extra" tasks
+thrown in at the end. These are for those of you who want to go a little above and beyond
+and attempt some more challenging tasks. And, feel free to do a some free form
+Hacker Extra style work yourself - in other words, do something beyond what
+was asked. You'll learn more.
+
+## Step 2 - Create a new R Markdown document
+
+Save this R Markdown document with a new name - name it **HW3_wrangling_lm_[_your last name_].Rmd**. Mine would
+be called **HW3_wrangling_lm_isken.Rmd**. Save it into the same folder as this assignment. 
+
+## Step 3 - Create R project and explore data folder
+
+Create an R project based on the folder containing this file. You'll notice that there is a folder named **data**.
+Inside of it you'll find the data file for this assignment - **flights_mi_2017.csv** as well as a few other data files. You'll also find an folder named **images** that contains, well, images.
+
+
+## Step 4 - Complete the following R tasks and answer questions
+
+Now you'll need to complete the following tasks in R. Just like we did in class, you should
+use a combination of markdown text (be concise, no need to write tons of text) 
+to explain what you are doing and R code chunks to actually do it.
+When you are done, use the "Knit" button to generate an HTML file from your R Markdown.
+You'll be submitting BOTH the completed R Markdown file as well as the generated HTML file. Just like in the previous homework, you'll simply be compressing your entire project folder and uploading that into Moodle.
+
+**HINT: I highly recommend skimming through the entire document before starting.**
+
+Let's load a few libraries we'll need:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(lubridate)
+library(readr)
+library(tidyr)
+```
+
+
+### Problem 1 - Reading the data in a few different ways
+
+Let's read the data into two `data.frames` named `flights1` and `flights2`. In the first
+case we'll use the base R `read.csv` function and in the second we'll use the
+**readr** function `read_csv`. For both we will use default arguments to start.
+
+```{r read_flights}
+flights1 <- read.csv("data/flights_mi_2017.csv")
+flights2 <- read_csv("data/flights_mi_2017.csv")
+```
+
+Use the `str` function to check out the structure of both data frames.
+
+
+```{r flights1_structure}
+str(flights1)
+```
+
+```{r flights2_structure}
+str(flights2)
+```
+
+Summarize the differences in the default behavior between the `read.csv` function and
+the `read_csv` function with respect to how character variables and date variables
+are treated. Note any other differences you see between the two functions.
+
+> Read.csv treats strings as factors, while Read_csv treats strings as....strings.  There may be pros and cons to either method, and we can easily set the read.csv to not use strings as factors if desired.  As far as the date field, the read.csv function treated the flight date as a factor, while the read_csv recognized the field as a date.  It looks like the two functions treat NA's differently.  With read_csv, we get some additional data on the structure.  It looks like it's showing the functions that are used to set the data frame field/vector formats...
+
+Your goal now is to get the data read into a dataframe named `flights` that
+eventually has the following data types for each of the columns. You can:
+
+* use either `read.csv` or `read_csv`
+* use any argument values you want with either function (i.e. you do NOT need
+to just accept the default behavior)
+* use additional commands after reading in the data to make any data type changes needed.
+* IMPORTANT: If for some reason you simply cannot get the flights dataframe created correctly (but you should, there's nothing tricky), I've included an RDS file in the data/ folder named **flights.rds**. You could simply read it in to a dataframe named flights - `flights <- readRDS("data/flights.rds")`. This is a last resort.
+
+Here's the target data types:
+
+  FL_DATE            : Date or POSIXct
+  CARRIER            : Factor
+  ORIGIN             : Factor
+  ORIGIN_CITY_NAME   : Factor
+  ORIGIN_STATE_ABR   : Factor
+  DEST               : Factor
+  DEST_CITY_NAME     : Factor
+  DEST_STATE_ABR     : Factor
+  CRS_DEP_TIME       : int or num
+  DEP_TIME           : int or num
+  DEP_DELAY          : int or num
+  TAXI_OUT           : int or num
+  WHEELS_OFF         : int or num
+  WHEELS_ON          : int or num
+  TAXI_IN            : int or num
+  CRS_ARR_TIME       : int or num
+  ARR_TIME           : int or num
+  ARR_DELAY          : int or num
+  CANCELLED          : int or num
+  CANCELLATION_CODE  : Factor
+  CRS_ELAPSED_TIME   : int or num
+  ACTUAL_ELAPSED_TIME: int or num
+  AIR_TIME           : int or num
+  DISTANCE           : int or num
+
+After you have the `flights` dataframe created, remove `flights1` and `flights2`.
+
+> Note: I changed the code chunk label below from "r read_flights" to "r read_flights_new". I was getting errors knitting to HTML and found that the issue was related to duplicate label names.  This is the link that helped me resolve: https://community.rstudio.com/t/i-cant-solve-error-to-knit-error-in-parse-block-g-1-g-1-params-src-duplicate-label-setup/6770 
+
+```{r read_flights_new}
+## Read in the csv file
+flights <- read.csv("data/flights_mi_2017.csv")
+
+## Do any data type conversions needed
+flights$FL_DATE <- ymd(flights$FL_DATE)
+
+
+## Remove flights1 and flights2 from the workspace
+rm(flights1, flights2)
+
+## Check out the structure of your flights dataframe
+str(flights)
+```
+
+### Problem 2 - Flights into and out of DTW
+
+Use **dplyr** for all of the questions in this problem.
+
+Find the number of flights into DTW by origin airport. Display the results in descending order by number of flights.
+
+```{r flights_by_origin}
+flights %>%
+  filter(DEST == "DTW") %>%
+  group_by(ORIGIN) %>%
+  summarize(num_flights = n()) %>%
+  arrange(desc(num_flights))
+
+```
+
+Now use **dplyr** to compute the following summary statistics for ARR_DELAY, grouped by origin airport, for flights into DTW. We did this in the **dplyr** notes.
+
+* number of flights 
+* mean and median
+* min, max, 5th and 95th percentile
+* IQR, standard deviation, range
+
+```{r stats_by_origin}
+by_origin <- group_by(flights, ORIGIN)
+
+summarize(by_origin,
+          num_flights = n(),
+          mean_delay = mean(ARR_DELAY, na.rm = TRUE),
+          median_delay = median(ARR_DELAY, na.rm = TRUE),
+          min_delay = min(ARR_DELAY, na.rm = TRUE),
+          max_delay = max(ARR_DELAY, na.rm = TRUE),
+          percentile95_delay = quantile(ARR_DELAY, 0.95, na.rm = TRUE),
+          percentile05_delay = quantile(ARR_DELAY, 0.05, na.rm = TRUE),
+          standard_dev_delay = sd(ARR_DELAY, na.rm = TRUE),
+          range_delay = max_delay - min_delay,
+          IQR = IQR(ARR_DELAY, na.rm = TRUE),
+          )
+
+```
+
+
+Repeat the above query but just include origin airports for which there were at least 100 flights.
+
+```{r stats_by_origin_gt100}
+by_origin <- group_by(flights, ORIGIN)
+
+by_orig_sum <- summarize(by_origin,
+          num_flights = n(),
+          mean_delay = mean(ARR_DELAY, na.rm = TRUE),
+          median_delay = median(ARR_DELAY, na.rm = TRUE),
+          min_delay = min(ARR_DELAY, na.rm = TRUE),
+          max_delay = max(ARR_DELAY, na.rm = TRUE),
+          percentile95_delay = quantile(ARR_DELAY, 0.95, na.rm = TRUE),
+          percentile05_delay = quantile(ARR_DELAY, 0.05, na.rm = TRUE),
+          standard_dev_delay = sd(ARR_DELAY, na.rm = TRUE),
+          range_delay = max_delay - min_delay,
+          IQR = IQR(ARR_DELAY, na.rm = TRUE),
+          )
+# not sure this is the most elegant, but it worked...
+filter(by_orig_sum, num_flights > 99)
+
+```
+
+Now for something more challenging.
+
+You start to wonder about the difference between the number of flights
+into DTW from a particular airport and the number of flights out of DTW for
+that same airport. For example, consider ATL:
+
+```{r inout_ATL}
+num_in_ATL <- flights %>% 
+  filter(ORIGIN == 'ATL') %>% 
+  summarize(num_flights = n())
+
+num_out_ATL <- flights %>% 
+  filter(DEST == 'ATL') %>% 
+  summarize(num_flights = n()) 
+
+# Convert resulting single valued dataframe to a number 
+num_in_ATL <- as.numeric(num_in_ATL)
+num_out_ATL <- as.numeric(num_out_ATL)
+
+sprintf("Num in to ATL = %i, Num out of ATL = %i", num_in_ATL, num_out_ATL)
+```
+
+BTW, instead of using `as.numeric` above to convert the result from
+a dataframe into a number, we could also use the `pull()` function in
+our **dplyr** statement.
+
+```{r inout_ATL_pull}
+num_out_ATL <- flights %>% 
+  filter(DEST == 'ATL') %>% 
+  summarize(num_flights = n()) %>% 
+  pull()
+
+```
+
+Of course we don't want to do this just for one airport and we certainly
+don't way to repeat the above approach for each airport. This is where R really shines in that we can design a multistep workflow that does
+something a little more difficult.
+
+We want to do the following.
+
+* Create a dataframe named `num_in` that counts flights by ORIGIN (don't include 'DTW' as an ORIGIN).
+* Create a dataframe named `num_out` that counts flights by DEST (again, don't include 'DTW' as a DEST).
+* Use one of **dplyr**'s `*_join` commands to join the two dataframes
+together by ORIGIN = DEST, creating a new dataframe named `inout`.
+* Rename the columns in `inout` using the vector c("AIRPORT", "num_in", "num_out")
+* Replace any NAs in `inout` with 0.
+* Compute a new column in `inout` called `balance` that is `num_in - num_out`
+* Display `inout` sorted in descending order by balance to see which airports have the greatest discrepancy between number of flights into DTW and number of flights from DTW.
+
+```{r num_in_num_out_soln}
+# Trying out both methods below...
+
+by_orig <- group_by(flights, Airport = ORIGIN)
+
+num_in <- summarize(by_orig,
+                    Flights_In = n())
+
+num_in <- filter(num_in, Airport != 'DTW')
+
+num_out <- flights %>%
+  group_by(Airport = DEST) %>%
+  summarise(
+    Flights_Out = n()) %>%
+  filter(Airport != 'DTW')
+
+```
+
+```{r merge_inout_soln}
+## Join the num_in and num_out dataframes
+# hopefully the message I get "...coercing to character vector" does not come back to haunt me
+inout <- full_join(num_in, num_out, by = NULL)
+
+## Rename columns in new inout dataframe
+## NOTE: I already did this while trying to make my joins work above...
+# names(???) <- c("AIRPORT", "num_in", "num_out")
+
+## Compute difference between number of flights in and number out
+inout$balance <- inout$Flights_In - inout$Flights_Out
+
+## Replace NA values in the num_in, num_out, and balance fields with 0.
+
+inout[is.na(inout)] <- 0
+
+# looks like I needed to recalculate this AFTER removing NA's
+inout$balance <- inout$Flights_In - inout$Flights_Out
+
+## Display sorted descending by balance and num_out
+inout %>%
+  arrange(desc(balance, Flights_Out))
+
+```
+
+
+### Problem 3 - converting wide to long data to facilitate plotting
+
+
+You decide you want to create a bar plot showing the total number of flights by hour of day and day of week. One of your colleagues, trying to be helpful, creates a file for you named **dow_hour_summary.csv**. However, the file they created was based on January 2016 data. Let's read it in.
+
+```{r read_dow_hour_summary_csv}
+dow_hour_summary_2016 <- read_csv("data/dow_hour_summary.csv")
+```
+
+Uh oh. The data is in "wide format". You want to facet by day of week but those are the column headings. Use either the **reshape2** or **tidyr** package to convert this data into long format and then create a bar chart showing the total number of flights by hour of day and faceted by day of week.
+
+```{r reshape}
+dow_hour_summary_2016_long <- dow_hour_summary_2016 %>%
+  gather('1', '2', '3', '4', '5', '6', '7', key = 'Day', value = 'Flights')
+
+```
+
+```{r plot_reshaped}
+ggplot(dow_hour_summary_2016_long) +
+  geom_bar(aes(CRS_DEP_HOUR, Flights), stat = 'Identity') +
+  facet_wrap(~ Day)
+```
+
+For the rest of the problems we are just interested in flights **out** of DTW. To make our life a little easier, let's create a dataframe called `flights_out`.
+
+```{r flights_out}
+flights_out <- flights %>% 
+  filter(ORIGIN == 'DTW')
+```
+
+### Problem 4 - Engineer new features to facilitate time of day analysis
+
+Remember, use the new `flights_out` dataframe for the rest of
+the assignment unless otherwise specified.
+
+Create a new field showing the hour of day for the flight departure called CRS_DEP_HOUR based on CRS_DEP_TIME.
+Check it by displaying the first 10 rows and the CRS_DEP_HOUR and
+CRS_DEP_TIME fields. Use can use **dplyr** and its `mutate()` function
+for this problem or you can use base R commands. Even better, show
+how to do it both ways. HINT: We did this in class.
+
+```{r crs_dep_hour}
+## Add new departure hour field
+
+flights_out$CRS_DEP_HOUR <- flights_out$CRS_DEP_TIME %/% 100
+  
+## Display first 10 rows and just the CRS_DEP_HOUR and CRS_DEP_TIME fields
+
+flights_out[1:10, c("CRS_DEP_TIME", "CRS_DEP_HOUR") ]
+
+```
+
+In addition, you decide that you'd like to create a "coarser" version 
+based on "departure period". Let's call it CRS_DEP_PRD. The values 
+of this new variable are as follows:
+
+1 if CRS_DEP_HOUR in [0,5]
+2 if CRS_DEP_HOUR in [6,12]
+3 if CRS_DEP_HOUR in [13,18]
+4 if CRS_DEP_HOUR in [19,23]
+
+
+See http://www.cookbook-r.com/Manipulating_data/Recoding_data/ for ideas. After
+creating the departure period field, makes sure you convert it to a factor if
+it's not already. HINT: The `cut()` function is useful.
+
+```{r crs_dep_prd}
+flights_out$Departure_Period <- cut(flights_out$CRS_DEP_HOUR,
+                                    breaks = c(-Inf, 5, 12, 18, Inf),
+                                    labels = c(1, 2, 3, 4)
+                                    )
+```
+
+
+Finally, create a field FL_DOW based on FL_DATE representing the day of week
+of the flight. The **lubridate** package will be helpful. 
+
+```{r fl_dow}
+# Create day of week field called FL_DOW 
+flights_out$FL_DOW <- wday(flights_out$FL_DATE)
+```
+
+### Problem 5 - Do group by analysis on CRS_DEP_PRD
+
+Are departure delays related to departure period? Start by computing basic summary statistics for DEP_DELAY by CRS_DEP_PRD. Of course you already know how to do this from previous questions in this assignment. If you weren't able to create CRS_DEP_PRD, then use CRS_DEP_HOUR.
+
+Use **dplyr**.
+
+```{r}
+ddelay_period_summary <- flights_out %>%
+  group_by(Departure_Period) %>%
+  summarize(
+      num_flights = n(),
+      mean_delay = mean(DEP_DELAY, na.rm = TRUE),
+      std_dev_delay = sd(DEP_DELAY, na.rm = TRUE),
+        min_delay = min(DEP_DELAY, na.rm = TRUE),
+        max_delay = max(DEP_DELAY, na.rm = TRUE),
+        IQR_Delay = IQR(DEP_DELAY, na.rm = TRUE))
+
+# these are the same thing....since we grouped by a factor with only 4 levels
+head(ddelay_period_summary)
+tail(ddelay_period_summary)
+```
+
+> It sure looks like we have longer delays later in the day.  The mean delay for periods 3 and 4 are 14.7 and 19.3 minutes, respectively, with some maximum delays well over 900 minutes.  At what point do you just cancel a flight?
+
+**Hacker Extra** If you'd like, make boxplots or violin plots of DEP_DELAY by
+CRS_DEP_PRD. They won't be pretty. Make them easier to read.
+
+> The below is more useful, though you still don't get the full picture of the outliers.  Credit "Joe" on Stack Exchange for the idea.  https://stackoverflow.com/questions/28198613/r-ggplot-boxplot-change-y-axis-limit/28199268
+
+```{r}
+ggplot(flights_out) + 
+  geom_boxplot(aes(Departure_Period, DEP_DELAY)) + 
+  coord_cartesian(ylim = c(-25, 50))
+```
+
+
+
+
+### Problem 6 - A scatterplot of DEP_DELAY by CRS_DEP_HOUR
+
+Create two versions, a standard scatter plot and one with "jitter". 
+
+Jitter is useful when you have many duplicate points that obscure each other.
+
+```{r scatter_delay_hour_soln}
+ggplot(flights_out) +
+  geom_point(aes(DEP_DELAY, CRS_DEP_HOUR)) +
+  ggtitle("No jitter")
+
+ggplot(flights_out) +
+  geom_point(aes(DEP_DELAY, CRS_DEP_HOUR), position = position_jitter(w = 0, h = 0.35)) +
+  ggtitle("With jitter")
+```
+
+### Problem 7 - Are departure delays related to day of week? 
+
+Use plots and/or group by analysis to take a first look at these questions.
+
+```{r dow_effect}
+DowDelaySummary <- flights_out %>%
+  group_by(FL_DOW) %>% 
+  summarize(
+    total_flights = n(),
+    avg_delay = mean(DEP_DELAY, na.rm = TRUE)
+  )
+
+DowDelaySummary
+
+# strugglesville getting the x axis to read with an axis title and correct labels
+ggplot(DowDelaySummary) + 
+  geom_bar(aes(FL_DOW, avg_delay), stat = 'Identity') + 
+  ggtitle('Average Delay by Day of the Week') + 
+  scale_y_continuous('Avg Delay') 
+```
+
+
+### Problem 8 - Linear regression models
+
+Given the limited number of fields we have and the fact that we only have one month of data, do you think we can build a linear regression model to predict DEP_DELAY that outperforms a simple null model which simply predicts the overall mean departure delay?
+
+I'll partition `flights_out` into a training and test set. Use the training data to build your model. Then use your model to make predictions on the test set and compute RMSE for your predictions. Compare to the RMSE I compute below for the naive null model based on just predicting overall mean delay for everyone.
+
+```{r partition}
+# Simple partition into train and test set
+set.seed(447)
+testrecs <- sample(nrow(flights_out), floor(0.20 * nrow(flights_out)))
+flights_out_train <- flights_out[-testrecs,]  
+flights_out_test <- flights_out[testrecs,]
+
+# Get rid of cancelled flights
+flights_out_train <- flights_out_train %>%
+  filter(CANCELLED == 0)
+
+flights_out_test <- flights_out_test %>%
+  filter(CANCELLED == 0)
+
+```
+
+Create our "null model" which is simply the overall mean DEP_DELAY for all the flights in the training dataset. Think of a null model as a very simple "model" that any other model better be able to beat if it's going to be any good.
+
+```{r null_model}
+null_pred <- mean(flights_out_train$DEP_DELAY)
+null_pred
+```
+
+```{r}
+# Load MLmetrics library to get rmse() function
+library(MLmetrics)
+null_rmse <- RMSE(flights_out_test$DEP_DELAY, null_pred)
+null_rmse
+```
+
+Try to build a linear regression model to predict DEP_DELAY that has a lower RMSE than this on the test data. Feel free to create any new fields you'd like as long as you don't include information that would not be available the day before the actual flight - i.e. we need to avoid being accidentally "clairvoyant".
+
+```{r}
+# fun with linear regression
+modelfit1 <- lm(DEP_DELAY ~ Departure_Period + FL_DOW, data = flights_out_train)
+
+summary(modelfit1)
+
+modelpredict1 <- predict(modelfit1, newdata = flights_out_test)
+
+summary(modelpredict1)
+modelpredict1RMSE <- RMSE(flights_out_test$DEP_DELAY, modelpredict1)
+modelpredict1RMSE 
+```
+
+> So....the first model I fit, I shouldn't even have bothered predicting with.  The P values on Departure Period were not good, which actually surprised me.  Day of the Week did have a good P value, so we will keep that one.  The RMSE was a wash with the null prediction.
+
+```{r}
+# model fitting, take 2
+modelfit2 <- lm(DEP_DELAY ~ FL_DOW + CRS_DEP_HOUR + DISTANCE + CARRIER, data = flights_out_train)
+
+summary(modelfit2)
+
+modelpredict2 <- predict(modelfit2, newdata = flights_out_test)
+
+summary(modelpredict2)
+modelpredict2RMSE <- RMSE(flights_out_test$DEP_DELAY, modelpredict2)
+modelpredict2RMSE 
+```
+> Okay, so not much better.  I was receiving an issue with adding in DEST to the model.  If I had been able to resolve that, maybe I would have had some better luck.
+
+
+### Problem 9 - Bar charts
+
+Create a basic bar chart based on number of flights by Carrier.
+
+```{r basic_bar}
+ggplot(flights_out) + geom_bar(aes(x=CARRIER))
+```
+
+Now create a similar plot but instead of the bars being based on
+counts, make it be the mean DEP_DELAY. The key is
+to base your plot on the result of a **dplyr** query. Hint: You'll
+also want to learn about the `stat` layer in ggplots.
+
+This is a general strategy that is often useful for complex charts - create an intermediate dataframe that will make it "easy" to create the chart. Tools like **dplyr** (or **plyr** or **apply** family) are
+often a good choice for creating the intermediate dataframe.
+
+For an additional challenge, try to order the bars so longest bars first.
+
+Here's what my solution looks like:
+
+```{r mean_depdelay_carrier}
+knitr::include_graphics("images/mean_depdelay_carrier.png")
+```
+
+
+```{r adv_bar}
+# did something similar above :-)
+CarrierDelaySummary <- flights_out %>%
+  group_by(CARRIER) %>% 
+  summarize(
+    total_flights = n(),
+    avg_delay = mean(DEP_DELAY, na.rm = TRUE)
+  )
+
+CarrierDelaySummary
+
+ggplot(CarrierDelaySummary) + 
+  geom_bar(aes(reorder(CARRIER, avg_delay), avg_delay), stat = 'Identity') + 
+  coord_flip() +
+  ggtitle('Average Delay by Carrier') + 
+  scale_y_continuous('Avg Delay') + 
+  scale_x_discrete('Carrier')
+```
+
+
+
+**Hacker Extra #1 - Faceted density plots for high volume airports**
+
+Create faceted (by ORIGIN) density plots of DEP_DELAY for those airports having greater than 200 flights.
+
+Here's what my solution looks like:
+
+```{r airtime_histos}
+knitr::include_graphics("images/depdelay_densities.png")
+```
+
+
+```{r densities_depdelay}
+
+```
+
+
+
+### Hacker Extra -#2 - Average number of flights by day of week by carrier
+
+Compute the average number of flights by day of week by carrier. Be careful - you must make sure that your solution works even if some carrier has a date on which they have no flights. Here's what my solution looks like.
+
+```{r flights_carrier_dow_png}
+knitr::include_graphics("images/flights_carrier_dow.png")
+```
+
+
+
+## Deliverables
+
+Make sure all of your files are closed and saved and are inside your R project folder. Compress that entire folder and upload it via Moodle.
