@@ -451,7 +451,9 @@ DowDelaySummary
 ggplot(DowDelaySummary) + 
   geom_bar(aes(FL_DOW, avg_delay), stat = 'Identity') + 
   ggtitle('Average Delay by Day of the Week') + 
-  scale_y_continuous('Avg Delay') 
+  scale_y_continuous('Avg Delay') +
+    scale_x_discrete(breaks = c('1', '2', '3', '4', '5', '6', '7'), labels = c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thus', 'Fri', 'Sat')) +
+  xlab("Day of the Week")
 ```
 
 
@@ -510,17 +512,37 @@ modelpredict1RMSE
 
 ```{r}
 # model fitting, take 2
-modelfit2 <- lm(DEP_DELAY ~ FL_DOW + CRS_DEP_HOUR + DISTANCE + CARRIER, data = flights_out_train)
+modelfit2 <- lm(DEP_DELAY ~ FL_DOW + CRS_DEP_HOUR + DISTANCE + CARRIER + DEST, data = flights_out_train)
 
 summary(modelfit2)
+
+# see my comments below
+# modelpredict2 <- predict(modelfit2, newdata = flights_out_test)
+```
+
+> After adding DEST to the model, I receive the following error when defining modelpredict2 above: Error in model.frame.default(Terms, newdata, na.action = na.action, xlev = object$xlevels) : factor DEST has new levels CHS.  
+
+```{r troubleshoot}
+# what's the deal???
+filter(flights_out_train, DEST == 'CHS')
+filter(flights_out_test, DEST == 'CHS')
+
+```
+
+> I interpret this as....the training set doesn't have an observation with CHS, so the model doens't know what to do with the CHS destination in the test set.  This has to be a common occurence in predictive modeling.  How to handle?  I goofed around with droplevels, but wasn't able to get it to work. For now, I will manually remove the record where DEST = CHS and hope it works.
+
+```{r BackToThePredicting}
+# removing one record...
+flights_out_test <- filter(flights_out_test, DEST != 'CHS')
 
 modelpredict2 <- predict(modelfit2, newdata = flights_out_test)
 
 summary(modelpredict2)
 modelpredict2RMSE <- RMSE(flights_out_test$DEP_DELAY, modelpredict2)
 modelpredict2RMSE 
+
 ```
-> Okay, so not much better.  I was receiving an issue with adding in DEST to the model.  If I had been able to resolve that, maybe I would have had some better luck.
+> Okay, I got the thing to run, but I am concerned about the warning about rank-deficient fits. And my RMSE is not good.  
 
 
 ### Problem 9 - Bar charts
