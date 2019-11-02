@@ -1,7 +1,7 @@
 ---
 title: "HW3 - Data wrangling and simple modeling with R"
-author: "misken"
-date: "October 15, 2019"
+author: "Keith Salach"
+date: "November 2, 2019"
 output: html_document
 ---
 
@@ -139,6 +139,9 @@ rm(flights1, flights2)
 
 ## Check out the structure of your flights dataframe
 str(flights)
+
+# adding this now for Hacker Extra #2
+flights$FL_DOW <- wday(flights$FL_DATE)
 ```
 
 ### Problem 2 - Flights into and out of DTW
@@ -406,12 +409,21 @@ tail(ddelay_period_summary)
 **Hacker Extra** If you'd like, make boxplots or violin plots of DEP_DELAY by
 CRS_DEP_PRD. They won't be pretty. Make them easier to read.
 
-> The below is more useful, though you still don't get the full picture of the outliers.  Credit "Joe" on Stack Exchange for the idea.  https://stackoverflow.com/questions/28198613/r-ggplot-boxplot-change-y-axis-limit/28199268
+> The stock boxplots were unreadable.  The below is more useful. You still don't get the full picture of the outliers using only boxplots, so I also put together a faceted QQ plot..  Credit "Joe" on Stack Exchange for the idea on limiting the y-coordinates: https://stackoverflow.com/questions/28198613/r-ggplot-boxplot-change-y-axis-limit/28199268
+And credit Nick Cox for the idea of adding in the QQ plot.  I couldn't figure out how to plot them together in the same plot.  Maybe another time....  https://stats.stackexchange.com/questions/114744/how-to-present-box-plot-with-an-extreme-outlier
+I tried some log transformed boxplots, but got rid of them because you lose the negative values...
 
 ```{r}
+# basically just zooming in
 ggplot(flights_out) + 
   geom_boxplot(aes(Departure_Period, DEP_DELAY)) + 
-  coord_cartesian(ylim = c(-25, 50))
+  coord_cartesian(ylim = c(-25, 50)) 
+
+# faceted QQ to add more info on the outliers
+ggplot(flights_out, aes(sample = DEP_DELAY)) + 
+  stat_qq() +
+  stat_qq_line() +
+  facet_wrap(~ Departure_Period)
 ```
 
 
@@ -447,12 +459,12 @@ DowDelaySummary <- flights_out %>%
 
 DowDelaySummary
 
-# strugglesville getting the x axis to read with an axis title and correct labels
+# Masters Green / Adjusted labels
 ggplot(DowDelaySummary) + 
-  geom_bar(aes(FL_DOW, avg_delay), stat = 'Identity') + 
+  geom_bar(aes(FL_DOW, avg_delay), stat = 'Identity', fill = rgb(red=7, green=102, blue=82, maxColorValue = 255)) + 
   ggtitle('Average Delay by Day of the Week') + 
   scale_y_continuous('Avg Delay') +
-    scale_x_discrete(breaks = c('1', '2', '3', '4', '5', '6', '7'), labels = c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thus', 'Fri', 'Sat')) +
+  scale_x_continuous(breaks = c(1:7), labels = c('S', 'M', 'T', 'W', 'R', 'F', 'S')) +
   xlab("Day of the Week")
 ```
 
@@ -542,7 +554,7 @@ modelpredict2RMSE <- RMSE(flights_out_test$DEP_DELAY, modelpredict2)
 modelpredict2RMSE 
 
 ```
-> Okay, I got the thing to run, but I am concerned about the warning about rank-deficient fits. And my RMSE is not good.  
+> Okay, I got the thing to run, but I am concerned about the warning about rank-deficient fits. And my RMSE is not good.  I am disappointed I don't have a better model.  But I'm not surprised since we don't have anything weather-related in the data set.  Looking forward to seeing what your take on this model was.
 
 
 ### Problem 9 - Bar charts
@@ -603,9 +615,22 @@ knitr::include_graphics("images/depdelay_densities.png")
 
 
 ```{r densities_depdelay}
+sum200 <- by_orig_sum %>%
+  filter(num_flights > 200)
 
+  
+ggplot(subset(flights, ORIGIN %in% sum200$ORIGIN)) + 
+  geom_density(aes(DEP_DELAY)) + 
+  facet_wrap(~ ORIGIN) + 
+  scale_x_continuous(name = 'Delay', limits = c(-50, 250)) +
+  ylab('Density')
+
+# double-check that DTW has more than 200 outbound flights.  I commented this out just to clean up the HTML.
+# flights %>%
+#   filter(ORIGIN == 'DTW')
 ```
 
+> My results are clearly different than the example provided.  I have 20 airports here.  I doubled checked the code, and believe I did this correctly.  I'm not sure if I used the wrong data-set, or otherwise did something to the flights data frame to mess it up.  Fingers crossed....
 
 
 ### Hacker Extra -#2 - Average number of flights by day of week by carrier
@@ -616,7 +641,51 @@ Compute the average number of flights by day of week by carrier. Be careful - yo
 knitr::include_graphics("images/flights_carrier_dow.png")
 ```
 
+> I ended up creating multiple new data frames and using lubridate functions to get the average flights by day of the week.  Seemed like a lot of work, but I was victorious in the end.
 
+```{r carrier flights day of week}
+# check dates in the data set
+startdate <- min(flights$FL_DATE)
+enddate <- max(flights$FL_DATE)
+
+# create a data frame of dates & corresponding days of the week in the flights data set
+# but first get the vector of dates from Jan 2017
+num_days <- interval(startdate, enddate)/days(1) 
+dates <- startdate + days(0: num_days)
+datesdf <- data.frame(dates)
+datesdf$dayofweek <- wday(datesdf$dates)
+
+# pivot
+datesdf <- datesdf %>% 
+  group_by(dayofweek) %>% 
+  summarize(count_jan_days = n())
+
+# now summarize flights by carrier and day of week
+flightsdf <- data.frame(flights %>% 
+  group_by(CARRIER, FL_DOW) %>% 
+  summarize(
+    totflights = n()
+    ))
+
+# now I have all the data needed....hopefully
+joindf <- left_join(flightsdf, datesdf, by = c('FL_DOW' = 'dayofweek'))
+joindf$avgdays <- joindf$totflights / joindf$count_jan_days
+
+joindf
+
+# note: adding in the ggtitle makes Carrier 'AS' appear to go null for some reason. 
+# Shrinking the font size seemed to help, so I assume it was just a visualization issue
+ggplot(joindf) +
+  geom_bar(aes(FL_DOW, avgdays), stat = 'Identity', fill = rgb(red=7, green=102, blue=82, maxColorValue = 255)) +
+  facet_wrap(~ CARRIER) +
+  scale_x_continuous(breaks = c(1:7), labels = c('S', 'M', 'T', 'W', 'R', 'F', 'S')) +
+  xlab('Day of the Week') +
+  ylab('Avg Days') + 
+  ggtitle('Average Flights by Day of the Week and Carrier') +
+  theme(plot.title = element_text(size=11))
+```
+
+> Check out my github repo: https://github.com/KSalach/PCDA-REPO
 
 ## Deliverables
 
