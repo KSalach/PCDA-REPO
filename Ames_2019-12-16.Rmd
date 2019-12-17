@@ -1,0 +1,29 @@
+---
+title: "Ames_Housing_Prices"
+author: "ksalach"
+date: "12/16/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+
+test <- read_csv('test.csv')
+train <- read_csv('train.csv')
+```
+
+```{r}
+test_df <- data.frame(test)
+train_df <- data.frame(train)
+```
+
+```{r}
+str(train_df)
+
+```
+
+
